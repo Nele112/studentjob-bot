@@ -2,15 +2,34 @@ import os
 from robocorp.tasks import task
 from robocorp import browser
 from RPA.Excel.Files import Files
-from extract import extract_jobs, get_jobs
+
 @task
 def student_job_robot():
     browser.configure(
         slowmo = 100,
     )
     search_linkedin()
-    extract_jobs()
-    compare_data()
+    jobs = extract_jobs() # Extract job listings from the current page and store them in a list
+    compare_data(jobs)    # Pass the extracted jobs to the next step for comparison with existing data
+
+def search_linkedin():
+    pass
+
+def extract_jobs():
+    """ -opens current page, -finds all job listings, -iterates through each job, -extracts job links from the current linkedin results page
+        -stores them in a list, -returns the list """
+    page = browser.page()
+    job_elements = page.locator("a.base-card__full-link")
+    count = job_elements.count()
+    jobs = []
+    for i in range(count):
+        job = job_elements.nth(i)
+        link = job.get_attribute ("href")
+        jobs.append( {
+            "Link" : link
+        })
+
+    return jobs
 
 def compare_data():
     create_data_excel()
