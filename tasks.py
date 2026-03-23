@@ -49,20 +49,65 @@ def search_linkedin():
         print(f"An error occurred: {e}")
 
 def extract_jobs():
-    """ -opens current page, -finds all job listings, -iterates through each job, -extracts job links from the current linkedin results page
-        -stores them in a list, -returns the list """
+    """ Extracts job data from the current LinkedIn results page. """
     page = browser.page()
-    job_elements = page.locator("a.base-card__full-link")
-    count = job_elements.count()
+
+    #Locate all job cards on the page
+    job_cards = page.locator("div.base-search-card")
+    count =job_cards.count()
     jobs = []
+
+    #Loop though each job card and extract data
     for i in range(count):
-        job = job_elements.nth(i)
-        link = job.get_attribute ("href")
-        jobs.append( {
-            "Link" : link
-        })
+        card = job_cards.nth(i)
+
+        #Extract job title
+        title_element = card.locator("h3.base-search-card__title")
+        if title_element.count() > 0:
+            title = title_element.first.inner_text().strip()
+        else:
+            title = ""
+
+        #Extract company name
+        company_element = card.locator("h4.base-search-card__subtitle")
+        if company_element.count() > 0:
+            company = company_element.first.inner_text().strip()
+        else:
+            company = ""
+
+        #Extract location
+        location_element = card.locator("span.job-search-card__location")
+        if location_element.count() > 0:
+            location = location_element.first.inner_text().strip()
+        else:
+            location = ""
+        
+        #Extract link (used as unique identifier)
+        link_element = card.locator("a.base-card__full-link")
+        if link_element.count() > 0:
+            href = link_element.first.get_attribute("href")
+
+            if href:
+                link = href.strip()
+            else:
+                link = ""
+        else:
+            link = ""
+
+        #Skip job if link is missing
+        if not link:
+            continue 
+        
+        #Add extracted data to jobs list
+        jobs.append({
+            "Company": company,
+            "Title": title,
+            "Location": location,
+            "Link": link
+    })    
 
     return jobs
+   
 
 def compare_data():
     create_data_excel()
