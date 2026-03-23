@@ -22,14 +22,23 @@ def create_data_excel():
     """Creates an excel workbook if one is not already in place"""
     lib = Files()
     file_path = './data.xlsx'
+    headers = [{"Company": "", "Title": "", "Location": "", "Deadline": "", "Link": ""}]
     jobs_list = get_jobs()
     if os.path.exists(file_path):
         print("Data excel exists, proceeding to open.")
         lib.open_workbook(path="data.xlsx")
-        lib.append_rows_to_worksheet(jobs_list)
         lib.save_workbook()
     else:
         print("Data excel does not exist, creating a new one.")
         lib.create_workbook(path="./data.xlsx", fmt="xlsx")
-        lib.append_rows_to_worksheet(jobs_list)
+        lib.create_worksheet(name="Jobs",content=headers, header=True)
         lib.save_workbook()
+
+def compare_jobs():
+    """Read from excel and compare with new data, store new jobs to the main file"""
+    lib = Files()
+    lib.open_workbook("data.xlsx")
+    rows = lib.read_worksheet_as_table(header=True)
+    existing_links = [row["Link"].strip()
+                      for row in rows if row["Link"]]
+    print(existing_links)
