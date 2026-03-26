@@ -1,5 +1,5 @@
 import os
-from robocorp.tasks import task
+from robocorp.tasks import task, teardown
 from robocorp import browser
 from RPA.Excel.Files import Files
 from RPA.Tables import Tables
@@ -7,91 +7,92 @@ from RPA.Outlook.Application import Application
 
 @task
 def student_job_robot():
-    browser.configure(
-        slowmo = 100,
-    )
-    scrape_linkedin_task()
-    jobs = extract_jobs() # Extract job listings from the current page and store them in a list
-    create_data_excel()
-    compare_jobs(jobs)    # Pass the extracted jobs to the next step for comparison with existing data
-    new_jobs_table = compare_jobs(jobs)
-    write_new_jobs(new_jobs_table)
-    send_notif_email()
+    """
+    Main task that orchestrates the LinkedIn scraping and job processing flow.
+    """
+    # 1. Start Navigation (Module 1)
+    active_page = scrape_linkedin_task()
+    
+    if active_page:
+        # 2. Start Search (Module 2)
+        search_linkedin(active_page)
+        
+        # 3. Continue to data extraction and Excel processing
+        # Note: These functions must exist later in your tasks.py file
+        print("Navigation and search successful. Starting extraction...")
+        
+        jobs = extract_jobs() 
+        create_data_excel()
+        new_jobs_table = compare_jobs(jobs)
+        write_new_jobs(new_jobs_table)
+        send_notif_email()
+    else:
+        print("Robot execution stopped: Could not initialize the LinkedIn page.")
 
 def scrape_linkedin_task():
     """
-    Initializes the browser and navigates to the LinkedIn Job search page.
-    Handles entry barriers including cookie banners and login modals.
-    
-    Returns:
-        page: The active browser page object if successful, None otherwise.
+    Initializes the browser and navigates to LinkedIn Jobs.
+    Handles cookie banners and sign-in modals.
+    Returns: The active page object.
     """
-    # Configure browser for visibility during development
-    browser.configure(headless=False, slowmo=1000)
+    # Configure browser visibility and speed
+    browser.configure(headless=False, slowmo=500)
     
     try:
-        # Navigate to the initial job search URL
+        print("Step 1: Navigating to LinkedIn...")
         page = browser.goto("https://fi.linkedin.com/jobs/jobs-in-finland?position=1&pageNum=0")
         
-        # Selectors for interaction
+        # Selectors for modals and banners
         close_x_button = "button[aria-label='Dismiss'], button[aria-label='Sulje']"
         accept_btn = "button:has-text('Hyväksy'), button:has-text('Accept')"
         
-        print("Waiting for potential pop-ups...")
-        # Static wait to allow the login modal to fully initialize
         page.wait_for_timeout(3000) 
         
-        # 1. Dismiss the 'Sign in' modal if it appears
+        # Dismiss sign-in popup
         if page.is_visible(close_x_button):
             page.click(close_x_button)
-            print("Login popup dismissed.")
-            page.wait_for_timeout(1000) # Short pause for the overlay to vanish
+            print("Status: Login popup dismissed.")
         
-        # 2. Accept cookies to clear the view
+        # Accept cookies
         if page.is_visible(accept_btn):
-            # Using force=True to bypass any remaining transparent overlays
             page.click(accept_btn, force=True)
-            print("Cookies accepted.")
-
+            print("Status: Cookies accepted.")
+            
         return page
             
     except Exception as e:
-        print(f"Error during navigation and entry: {e}")
+        print(f"Error in scrape_linkedin_task: {e}")
         return None
 
 def search_linkedin(page, job_title="(Junior OR Trainee OR Internship) AND (Software OR Developer OR IT)", location="Finland"):
     """
-    Performs a job search on LinkedIn using Boolean operators and location.
-    
-    Args:
-        page: The active Playwright page object.
-        job_title (str): The search query for job titles.
-        location (str): The geographic area for the search.
+    Performs a job search on the provided page object.
     """
-    
-    # Language-independent technical selectors (name attributes)
     job_input_selector = "input[name='keywords']" 
     location_input_selector = "input[name='location']"
 
-    print(f"Searching for: {job_title} in {location}")
-
     try:
-        # Wait for the search inputs to be ready
+        print(f"Step 2: Searching for '{job_title}' in '{location}'...")
         page.wait_for_selector(job_input_selector, timeout=10000)
         
         # Fill search criteria
         page.fill(job_input_selector, job_title)
         page.fill(location_input_selector, location)
         
-        # Execute search by pressing Enter in the location field
+        # Execute search
         page.press(location_input_selector, "Enter")
         
         # Wait for the result listing to load
         page.wait_for_load_state("networkidle")
-        print("Search initialized and results loaded.")
+        print("Status: Search results loaded.")
         
     except Exception as e:
-        print(f"Error during search execution: {e}")
+        print(f"Error in search_linkedin: {e}")
+
+@teardown
+def cleanup(task):
+    """Closes all browser instances after the task finishes."""
+    browser.close_all()
 
 def extract_jobs():
     """ Extracts job data from the current LinkedIn results page. """
