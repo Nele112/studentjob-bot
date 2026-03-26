@@ -14,7 +14,7 @@ def student_job_robot():
     jobs = extract_jobs() # Extract job listings from the current page and store them in a list
     create_data_excel()
     compare_jobs(jobs)    # Pass the extracted jobs to the next step for comparison with existing data
-    new_jobs_table = compare_jobs()
+    new_jobs_table = compare_jobs(jobs)
     write_new_jobs(new_jobs_table)
     send_notif_email()
 
