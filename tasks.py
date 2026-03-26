@@ -187,11 +187,11 @@ def write_new_jobs(new_jobs_table):
 
 def send_notif_email():
     """Send notification by email to user, if new jobs has been found"""
-    app = Application()
+    app = Outlook()
     app.open_application()
     app.send_email(
         recipients='EMAIL_1, EMAIL_2',
         subject='New job listings found!',
         body='StudentJob Robot has found new job listings. Check them out!',
-        attachments='./data.xlsx'
+        attachments=os.path.join(os.path.curdir, "data.xlsx")
     )
