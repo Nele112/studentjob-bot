@@ -226,7 +226,7 @@ def write_new_jobs(new_jobs_table):
 
 def send_notif_email():
     """Send notification by email to user, if new jobs has been found"""
-    app = Outlook()
+    app = Application()
     app.open_application()
     app.send_email(
         recipients='EMAIL_1, EMAIL_2',
