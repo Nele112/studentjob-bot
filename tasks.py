@@ -3,6 +3,7 @@ from robocorp.tasks import task
 from robocorp import browser
 from RPA.Excel.Files import Files
 from RPA.Tables import Tables
+from RPA.Outlook.Application import Application
 
 @task
 def student_job_robot():
@@ -15,6 +16,7 @@ def student_job_robot():
     compare_jobs(jobs)    # Pass the extracted jobs to the next step for comparison with existing data
     new_jobs_table = compare_jobs()
     write_new_jobs(new_jobs_table)
+    send_notif_email()
 
 def search_linkedin():
     """1. Opens web browser, 2. Opens LinkedIn, 3. Handles cookies 4. Handles Sign in pop up"""
@@ -182,3 +184,14 @@ def write_new_jobs(new_jobs_table):
 
     lib.save_workbook("data.xlsx")
     print(f"Added {len(rows)} new jobs.")
+
+def send_notif_email():
+    """Send notification by email to user, if new jobs has been found"""
+    app = Application()
+    app.open_application()
+    app.send_email(
+        recipients='EMAIL_1, EMAIL_2',
+        subject='New job listings found!',
+        body='StudentJob Robot has found new job listings. Check them out!',
+        attachments='./data.xlsx'
+    )
