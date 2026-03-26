@@ -187,13 +187,13 @@ def compare_jobs(jobs):
     existing_table = lib.read_worksheet_as_table(header=True)
     existing_links = {
         normalize(row["Link"])
-        for row in tables.iterate_table_rows(existing_table)
+        for row in existing_table
         if row.get("Link")
     }
     """Read excel and get old job links as a table"""
     
     new_job_rows = []
-    for row in tables.iterate_table_rows(new_links):
+    for row in new_links:
         link = row.get("Link")
         if link and normalize(link) not in existing_links:
             new_job_rows.append(row)
