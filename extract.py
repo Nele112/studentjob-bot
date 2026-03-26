@@ -1,5 +1,8 @@
 from robocorp import browser
 
+_jobs = None
+"""For using the list in a later step""" 
+
 def extract_jobs():
     """ -opens current page
         -finds all job listings
@@ -19,3 +22,7 @@ def extract_jobs():
         })
 
     return jobs
+
+def get_jobs():
+    """Function so we can get the jobs list in another script"""
+    return _jobs
