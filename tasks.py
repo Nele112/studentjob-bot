@@ -148,6 +148,7 @@ def extract_jobs():
             "Company": company,
             "Title": title,
             "Location": location,
+            "Deadline": "",
             "Link": link
     })    
 
