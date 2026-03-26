@@ -2,6 +2,7 @@ import os
 from robocorp.tasks import task
 from robocorp import browser
 from RPA.Excel.Files import Files
+from RPA.Tables import Tables
 
 @task
 def student_job_robot():
@@ -10,7 +11,10 @@ def student_job_robot():
     )
     search_linkedin()
     jobs = extract_jobs() # Extract job listings from the current page and store them in a list
-    compare_data(jobs)    # Pass the extracted jobs to the next step for comparison with existing data
+    create_data_excel()
+    compare_jobs(jobs)    # Pass the extracted jobs to the next step for comparison with existing data
+    new_jobs_table = compare_jobs()
+    write_new_jobs(new_jobs_table)
 
 def search_linkedin():
     """1. Opens web browser, 2. Opens LinkedIn, 3. Handles cookies 4. Handles Sign in pop up"""
@@ -109,18 +113,12 @@ def extract_jobs():
     return jobs
    
 
-def compare_data():
-    create_data_excel()
-    compare_jobs()
-    write_new_jobs()
-    notify_user_by_email()
     
 def create_data_excel():
     """Creates an excel workbook if one is not already in place"""
     lib = Files()
     file_path = './data.xlsx'
     headers = [{"Company": "", "Title": "", "Location": "", "Deadline": "", "Link": ""}]
-    jobs_list = get_jobs()
     if os.path.exists(file_path):
         print("Data excel exists, proceeding to open.")
         lib.open_workbook(path="data.xlsx")
@@ -131,11 +129,56 @@ def create_data_excel():
         lib.create_worksheet(name="Jobs",content=headers, header=True)
         lib.save_workbook()
 
-def compare_jobs():
+
+def compare_jobs(jobs):
     """Read from excel and compare with new data, store new jobs to the main file"""
+    
     lib = Files()
+    tables = Tables()
+    
+    def normalize(link):
+        return link.strip().rstrip("/").split("?")[0]
+
+    new_links = tables.create_table(jobs)
+    """Transform the new jobs list in to a table"""
+    
     lib.open_workbook("data.xlsx")
-    rows = lib.read_worksheet_as_table(header=True)
-    existing_links = [row["Link"].strip()
-                      for row in rows if row["Link"]]
-    print(existing_links)
+    existing_table = lib.read_worksheet_as_table(header=True)
+    existing_links = {
+        normalize(row["Link"])
+        for row in tables.iterate_table_rows(existing_table)
+        if row.get("Link")
+    }
+    """Read excel and get old job links as a table"""
+    
+    new_job_rows = []
+    for row in tables.iterate_table_rows(new_links):
+        link = row.get("Link")
+        if link and normalize(link) not in existing_links:
+            new_job_rows.append(row)
+    """See if links matches between tables"""
+
+    new_jobs_table = tables.create_table(new_job_rows)
+    return new_jobs_table
+    
+
+def write_new_jobs(new_jobs_table):
+    """Write the new jobs in to the existing excel"""
+    lib = Files()
+    tables = Tables()
+
+    rows = tables.export_table(new_jobs_table)
+    """Table in to a list"""
+
+    if not rows:
+        print("Now new jobs found")
+        return
+    
+    lib.open_workbook("data.xlsx")
+    lib.append_rows_to_worksheet(
+        rows,
+        header=False
+    )
+
+    lib.save_workbook("data.xlsx")
+    print(f"Added {len(rows)} new jobs.")
