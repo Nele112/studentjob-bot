@@ -214,7 +214,7 @@ def write_new_jobs(new_jobs_table):
     """Table in to a list"""
 
     if not rows:
-        print("Now new jobs found")
+        print("No new jobs found")
         return
     
     lib.open_workbook("data.xlsx")
