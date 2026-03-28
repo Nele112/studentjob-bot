@@ -42,6 +42,7 @@ def student_job_robot():
         new_jobs_table = compare_jobs(all_jobs)
         write_new_jobs(new_jobs_table)
         send_notif_email()
+
     else:
         print("Robot execution stopped: Could not initialize the LinkedIn page.")
 
@@ -250,7 +251,7 @@ def write_new_jobs(new_jobs_table):
     if not rows:
         print("No new jobs found")
         return
-    
+        
     lib.open_workbook("data.xlsx")
     lib.append_rows_to_worksheet(rows, header=False)
 
@@ -259,7 +260,7 @@ def write_new_jobs(new_jobs_table):
 
 def send_notif_email():
     """Send notification by email to user, if new jobs has been found"""
-    
+
     app = Application()
     app.open_application()
     app.send_email(
