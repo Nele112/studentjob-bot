@@ -5,6 +5,13 @@ from RPA.Excel.Files import Files
 from RPA.Tables import Tables
 from RPA.Outlook.Application import Application
 
+SEARCH_KEYWORDS = [
+    "it trainee",
+    "it harjoittelija",
+    "it intern",
+    "it internship"
+]
+
 @task
 def student_job_robot():
     """
@@ -15,15 +22,19 @@ def student_job_robot():
     
     if active_page:
         # 2. Start Search (Module 2)
-        search_linkedin(active_page)
+        all_jobs = []
+
+        for keyword in SEARCH_KEYWORDS:
+            search_linkedin(active_page, keyword)
+            jobs = extract_jobs()
+            all_jobs.extend(jobs)
         
         # 3. Continue to data extraction and Excel processing
         # Note: These functions must exist later in your tasks.py file
         print("Navigation and search successful. Starting extraction...")
         
-        jobs = extract_jobs() 
         create_data_excel()
-        new_jobs_table = compare_jobs(jobs)
+        new_jobs_table = compare_jobs(all_jobs)
         write_new_jobs(new_jobs_table)
         send_notif_email()
     else:
@@ -64,7 +75,7 @@ def scrape_linkedin_task():
         print(f"Error in scrape_linkedin_task: {e}")
         return None
 
-def search_linkedin(page, job_title="(Junior OR Trainee OR Internship) AND (Software OR Developer OR IT)", location="Finland"):
+def search_linkedin(page, job_title, location="Finland"):
     """
     Performs a job search on the provided page object.
     """
