@@ -1,4 +1,5 @@
 import os
+import random
 from robocorp.tasks import task, teardown
 from robocorp import browser
 from RPA.Excel.Files import Files
@@ -28,6 +29,7 @@ def student_job_robot():
             search_linkedin(active_page, keyword)
             jobs = extract_jobs()
             all_jobs.extend(jobs)
+            active_page.wait_for_timeout(random.randint(4000, 9000))
         
         # 3. Continue to data extraction and Excel processing
         # Note: These functions must exist later in your tasks.py file
@@ -79,6 +81,13 @@ def search_linkedin(page, job_title, location="Finland"):
     """
     Performs a job search on the provided page object.
     """
+    page.goto("https://fi.linkedin.com/jobs/jobs-in-finland?position=1&pageNum=0")
+    page.wait_for_timeout(5000)
+
+    if "authwall" in page.url:
+        print("Authwall detected. Skipping this keyword.")
+        return False
+    
     job_input_selector = "input[name='keywords']" 
     location_input_selector = "input[name='location']"
 
@@ -96,9 +105,12 @@ def search_linkedin(page, job_title, location="Finland"):
         # Wait for the result listing to load
         page.wait_for_load_state("networkidle")
         print("Status: Search results loaded.")
+
+        return True
         
     except Exception as e:
         print(f"Error in search_linkedin: {e}")
+        return False
 
 @teardown
 def cleanup(task):
