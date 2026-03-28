@@ -1,11 +1,13 @@
 import os
 import random
+
 from robocorp.tasks import task, teardown
 from robocorp import browser
 from RPA.Excel.Files import Files
 from RPA.Tables import Tables
 from RPA.Outlook.Application import Application
 
+# Predefined job search keywords agreed by the team.
 SEARCH_KEYWORDS = [
     "it trainee",
     "it harjoittelija",
@@ -29,6 +31,7 @@ def student_job_robot():
             search_linkedin(active_page, keyword)
             jobs = extract_jobs()
             all_jobs.extend(jobs)
+            # Small delay to mimic human behavior and reduce blocking risk
             active_page.wait_for_timeout(random.randint(4000, 9000))
         
         # 3. Continue to data extraction and Excel processing
@@ -46,7 +49,7 @@ def scrape_linkedin_task():
     """
     Initializes the browser and navigates to LinkedIn Jobs.
     Handles cookie banners and sign-in modals.
-    Returns: The active page object.
+    Returns: page object if successful, none otherwise.
     """
     # Configure browser visibility and speed
     browser.configure(headless=False, slowmo=500)
@@ -59,9 +62,10 @@ def scrape_linkedin_task():
         close_x_button = "button[aria-label='Dismiss'], button[aria-label='Sulje']"
         accept_btn = "button:has-text('Hyväksy'), button:has-text('Accept')"
         
+        # Wait for potential popups to appear
         page.wait_for_timeout(3000) 
         
-        # Dismiss sign-in popup
+        # Dismiss sign-in popup if visible
         if page.is_visible(close_x_button):
             page.click(close_x_button)
             print("Status: Login popup dismissed.")
@@ -79,11 +83,16 @@ def scrape_linkedin_task():
 
 def search_linkedin(page, job_title, location="Finland"):
     """
-    Performs a job search on the provided page object.
+    Searches LinkedIn jobs using the given keyword and location.
+    Returns True, if the search completed successfully, False otherwise.
     """
+    # Reset to the LinkedIn jobs landind page before each new search
     page.goto("https://fi.linkedin.com/jobs/jobs-in-finland?position=1&pageNum=0")
+
+    # Give the page time to load before checking the search form
     page.wait_for_timeout(5000)
 
+    # Skip this keyword if LinkedIn redirects to authwall
     if "authwall" in page.url:
         print("Authwall detected. Skipping this keyword.")
         return False
@@ -118,40 +127,34 @@ def cleanup(task):
     browser.close_all()
 
 def extract_jobs():
-    """ Extracts job data from the current LinkedIn results page. """
-    page = browser.page()
+    """ Extracts job data from the currently visible LinkedIn results page. """
 
-    #Locate all job cards on the page
+    page = browser.page()
     job_cards = page.locator("div.base-search-card")
     count =job_cards.count()
     jobs = []
 
-    #Loop though each job card and extract data
     for i in range(count):
         card = job_cards.nth(i)
 
-        #Extract job title
         title_element = card.locator("h3.base-search-card__title")
         if title_element.count() > 0:
             title = title_element.first.inner_text().strip()
         else:
             title = ""
 
-        #Extract company name
         company_element = card.locator("h4.base-search-card__subtitle")
         if company_element.count() > 0:
             company = company_element.first.inner_text().strip()
         else:
             company = ""
 
-        #Extract location
         location_element = card.locator("span.job-search-card__location")
         if location_element.count() > 0:
             location = location_element.first.inner_text().strip()
         else:
             location = ""
         
-        #Extract link (used as unique identifier)
         link_element = card.locator("a.base-card__full-link")
         if link_element.count() > 0:
             href = link_element.first.get_attribute("href")
@@ -163,11 +166,10 @@ def extract_jobs():
         else:
             link = ""
 
-        #Skip job if link is missing
+        #Skip job if link is missing, because link is used as unique identifier
         if not link:
             continue 
         
-        #Add extracted data to jobs list
         jobs.append({
             "Company": company,
             "Title": title,
@@ -182,9 +184,12 @@ def extract_jobs():
     
 def create_data_excel():
     """Creates an excel workbook if one is not already in place"""
+
     lib = Files()
     file_path = './data.xlsx'
+
     headers = [{"Company": "", "Title": "", "Location": "", "Deadline": "", "Link": ""}]
+
     if os.path.exists(file_path):
         print("Data excel exists, proceeding to open.")
         lib.open_workbook(path="data.xlsx")
@@ -197,7 +202,9 @@ def create_data_excel():
 
 
 def compare_jobs(jobs):
-    """Read from excel and compare with new data, store new jobs to the main file"""
+    """Read from excel and compare with new data, store new jobs to the main file. 
+    Returns a table containing nly new job entries based on unique links
+    """
     
     lib = Files()
     tables = Tables()
@@ -205,52 +212,54 @@ def compare_jobs(jobs):
     def normalize(link):
         return link.strip().rstrip("/").split("?")[0]
 
+    # Transform the new jobs list in to a table
     new_links = tables.create_table(jobs)
-    """Transform the new jobs list in to a table"""
-    
+        
+    # Read excel and get old job links as a table
     lib.open_workbook("data.xlsx")
     existing_table = lib.read_worksheet_as_table(header=True)
+
     existing_links = {
         normalize(row["Link"])
         for row in existing_table
         if row.get("Link")
     }
-    """Read excel and get old job links as a table"""
-    
+
+    # See if links matches between tables    
     new_job_rows = []
+
     for row in new_links:
         link = row.get("Link")
         if link and normalize(link) not in existing_links:
             new_job_rows.append(row)
-    """See if links matches between tables"""
-
+ 
     new_jobs_table = tables.create_table(new_job_rows)
     return new_jobs_table
     
 
 def write_new_jobs(new_jobs_table):
-    """Write the new jobs in to the existing excel"""
+    """
+    Write the new jobs in to the existing excel.
+    """
     lib = Files()
     tables = Tables()
 
+    # Table in to a list.
     rows = tables.export_table(new_jobs_table)
-    """Table in to a list"""
-
+   
     if not rows:
         print("No new jobs found")
         return
     
     lib.open_workbook("data.xlsx")
-    lib.append_rows_to_worksheet(
-        rows,
-        header=False
-    )
+    lib.append_rows_to_worksheet(rows, header=False)
 
     lib.save_workbook("data.xlsx")
     print(f"Added {len(rows)} new jobs.")
 
 def send_notif_email():
     """Send notification by email to user, if new jobs has been found"""
+    
     app = Application()
     app.open_application()
     app.send_email(
