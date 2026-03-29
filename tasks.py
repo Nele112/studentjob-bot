@@ -54,12 +54,6 @@ def student_job_robot():
         else:
             print("No notification sent because no new jobs were found.")
 
-#        write_new_jobs(new_jobs_table)
-#        send_notif_email()
-
-#    else:
-#       print("Robot execution stopped: Could not initialize the LinkedIn page.")
-
     except Exception as e:
         #If any critical error happens anywhere in the main flow, print it to terminal and notify user by email.
         print(f"Robot failed: {e}")
