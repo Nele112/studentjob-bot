@@ -20,31 +20,50 @@ def student_job_robot():
     """
     Main task that orchestrates the LinkedIn scraping and job processing flow.
     """
-    # 1. Start Navigation (Module 1)
-    active_page = scrape_linkedin_task()
+    try:
+        # 1. Start Navigation (Module 1)
+        active_page = scrape_linkedin_task()
+
+        #If LinkedIn page could not be opened, trat it as a real error.
+        if not active_page:
+            raise Exception("Could not initialize LinkedIn page.")
     
-    if active_page:
         # 2. Start Search (Module 2)
         all_jobs = []
 
         for keyword in SEARCH_KEYWORDS:
-            search_linkedin(active_page, keyword)
-            jobs = extract_jobs()
-            all_jobs.extend(jobs)
-            # Small delay to mimic human behavior and reduce blocking risk
-            active_page.wait_for_timeout(random.randint(4000, 9000))
+            success = search_linkedin(active_page, keyword)
+
+            if success:
+                jobs = extract_jobs()
+                all_jobs.extend(jobs)
         
-        # 3. Continue to data extraction and Excel processing
-        # Note: These functions must exist later in your tasks.py file
-        print("Navigation and search successful. Starting extraction...")
-        
+                # Small delay to mimic human behavior and reduce blocking risk
+                active_page.wait_for_timeout(random.randint(4000, 9000))
+            else:
+                #This doesn't stop the whole robot. I only means this one keyword search failed.
+                print(f"Search failed for keyword: {keyword}")
+                  
         create_data_excel()
         new_jobs_table = compare_jobs(all_jobs)
-        write_new_jobs(new_jobs_table)
-        send_notif_email()
+        added_count = write_new_jobs(new_jobs_table)
 
-    else:
-        print("Robot execution stopped: Could not initialize the LinkedIn page.")
+        #Send notification only if new jobs were added
+        if added_count > 0:
+            send_notif_email()
+        else:
+            print("No notification sent because no new jobs were found.")
+
+#        write_new_jobs(new_jobs_table)
+#        send_notif_email()
+
+#    else:
+#       print("Robot execution stopped: Could not initialize the LinkedIn page.")
+
+    except Exception as e:
+        #If any critical error happens anywhere in the main flow, print it to terminal and notify user by email.
+        print(f"Robot failed: {e}")
+        send_error_email(str(e))
 
 def scrape_linkedin_task():
     """
@@ -189,7 +208,12 @@ def create_data_excel():
     lib = Files()
     file_path = './data.xlsx'
 
-    headers = [{"Company": "", "Title": "", "Location": "", "Deadline": "", "Link": ""}]
+    headers = [{"Company": "", 
+                "Title": "", 
+                "Location": "", 
+                "Deadline": "", 
+                "Link": ""
+    }]
 
     if os.path.exists(file_path):
         print("Data excel exists, proceeding to open.")
@@ -250,13 +274,14 @@ def write_new_jobs(new_jobs_table):
    
     if not rows:
         print("No new jobs found")
-        return
+        return 0
         
     lib.open_workbook("data.xlsx")
     lib.append_rows_to_worksheet(rows, header=False)
-
     lib.save_workbook("data.xlsx")
+
     print(f"Added {len(rows)} new jobs.")
+    return len(rows)
 
 def send_notif_email():
     """Send notification by email to user, if new jobs has been found"""
@@ -270,19 +295,18 @@ def send_notif_email():
         attachments=os.path.join(os.path.curdir, "data.xlsx")
     )
 
-#def send_error_email():
- #   """Send error notification email to user."""
+def send_error_email(error_message):
+    """Send error notification email to user."""
 
-  #  try: 
-   #     app = Application()
-    #    app.open_application()
-     #   app.send_email(
-       #     recipients='EMAIL_1, EMAIL_2',
-        #    subject='StudentJob Robot ERROR',
-         #   body=f'Robot encountered an error:\n\n{error_message}'
-    #    )
-      #  print("Error email sent.")
+    try: 
+        app = Application()
+        app.open_application()
+        app.send_email(
+            recipients='EMAIL_1, EMAIL_2',
+            subject='StudentJob Robot ERROR',
+            body=f'Robot encountered an error:\n\n{error_message}'
+        )
+        print("Error email sent.")
     
-    #except Exception as e:
-     #   print(f"Failed to send error email: {e}")
-# SE ON VIELÄ KESKEN
+    except Exception as e:
+        print(f"Failed to send error email: {e}")
