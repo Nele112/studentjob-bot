@@ -269,3 +269,20 @@ def send_notif_email():
         body='StudentJob Robot has found new job listings. Check them out!',
         attachments=os.path.join(os.path.curdir, "data.xlsx")
     )
+
+#def send_error_email():
+ #   """Send error notification email to user."""
+
+  #  try: 
+   #     app = Application()
+    #    app.open_application()
+     #   app.send_email(
+            recipients='EMAIL_1, EMAIL_2',
+            subject='StudentJob Robot ERROR',
+            body=f'Robot encountered an error:\n\n{error_message}'
+        )
+      #  print("Error email sent.")
+    
+    #except Exception as e:
+     #   print(f"Failed to send error email: {e}")
+# SE ON VIELÄ KESKEN
