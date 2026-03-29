@@ -277,10 +277,10 @@ def send_notif_email():
    #     app = Application()
     #    app.open_application()
      #   app.send_email(
-            recipients='EMAIL_1, EMAIL_2',
-            subject='StudentJob Robot ERROR',
-            body=f'Robot encountered an error:\n\n{error_message}'
-        )
+       #     recipients='EMAIL_1, EMAIL_2',
+        #    subject='StudentJob Robot ERROR',
+         #   body=f'Robot encountered an error:\n\n{error_message}'
+    #    )
       #  print("Error email sent.")
     
     #except Exception as e:
