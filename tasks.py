@@ -190,7 +190,7 @@ def compare_jobs(jobs):
     new_links = tables.create_table(jobs)
         
     # Read excel and get old job links as a table
-    lib.open_workbook("data.xlsx")
+    lib.open_workbook("output/data.xlsx")
     existing_table = lib.read_worksheet_as_table(header=True)
 
     existing_links = {
@@ -225,9 +225,9 @@ def write_new_jobs(new_jobs_table):
         print("No new jobs found")
         return 0
         
-    lib.open_workbook("data.xlsx")
+    lib.open_workbook("output/data.xlsx")
     lib.append_rows_to_worksheet(rows, header=False)
-    lib.save_workbook("data.xlsx")
+    lib.save_workbook("output/data.xlsx")
 
     print(f"Added {len(rows)} new jobs.")
     return len(rows)
@@ -250,7 +250,7 @@ def send_notif_email():
         recipients='EMAIL_1, EMAIL_2',
         subject='New job listings found!',
         body='StudentJob Robot has found new job listings. Check them out!',
-        attachments=os.path.join(os.path.curdir, "data.xlsx")
+        attachments=os.path.join(os.path.curdir, "output/data.xlsx")
     )
 
 def send_error_email(error_message):
