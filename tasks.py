@@ -244,31 +244,32 @@ def send_notif_email():
         print(f"Email Error: {e}")
     """Send notification by email to user, if new jobs has been found"""
 
-    app = Application()
-    app.open_application()
-    app.send_email(
-        recipients='EMAIL_1, EMAIL_2',
-        subject='New job listings found!',
-        body='StudentJob Robot has found new job listings. Check them out!',
-        attachments=os.path.join(os.path.curdir, "output/data.xlsx")
-    )
+#    app = Application()
+#    app.open_application()
+#    app.send_email(
+#        recipients='EMAIL_1, EMAIL_2',
+#        subject='New job listings found!',
+#        body='StudentJob Robot has found new job listings. Check them out!',
+#        attachments=os.path.join(os.path.curdir, "output/data.xlsx")
+#    )
 
 def send_error_email(error_message):
     """Send error notification email to user."""
 
-    try: 
-        app = Application()
-        app.open_application()
-        app.send_email(
-            recipients='EMAIL_1, EMAIL_2',
-            subject='StudentJob Robot ERROR',
-            body=f'Robot encountered an error:\n\n{error_message}'
-        )
-        print("Error email sent.")
+#    try: 
+#        app = Application()
+#        app.open_application()
+#        app.send_email(
+#            recipients='EMAIL_1, EMAIL_2',
+#            subject='StudentJob Robot ERROR',
+#            body=f'Robot encountered an error:\n\n{error_message}'
+#        )
+#        print("Error email sent.")
     
-    except Exception as e:
-        print(f"Failed to send error email: {e}")
-
+#    except Exception as e:
+#        print(f"Failed to send error email: {e}")
+    print(f"Robot error: {error_message}")
+    
 @teardown
 def cleanup(task):
     """Closes browser safely."""
