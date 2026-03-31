@@ -24,7 +24,7 @@ def student_job_robot():
         # 1. Start Navigation (Module 1)
         active_page = scrape_linkedin_task()
 
-        #If LinkedIn page could not be opened, trat it as a real error.
+        #If LinkedIn page could not be opened, treat it as a real error.
         if not active_page:
             raise Exception("Could not initialize LinkedIn page.")
     
@@ -43,8 +43,12 @@ def student_job_robot():
             else:
                 #This doesn't stop the whole robot. I only means this one keyword search failed.
                 print(f"Search failed for keyword: {keyword}")
-                  
+        print(f"Step 3: Extraction completed. Total collected jobs: {len(all_jobs)}")          
+        
+        print("Step 4: Preparing Excel data file...")
         create_data_excel()
+
+        print("Step 5: Comparing jobs and updating Excel...")
         new_jobs_table = compare_jobs(all_jobs)
         added_count = write_new_jobs(new_jobs_table)
 
@@ -85,13 +89,17 @@ def scrape_linkedin_task():
 
 def search_linkedin(page, job_title, location="Finland"):
     """Searches LinkedIn jobs using the given keyword."""
+    
     page.goto("https://fi.linkedin.com/jobs/jobs-in-finland?position=1&pageNum=0")
     page.wait_for_timeout(5000)
+    
     if "authwall" in page.url:
         print("Authwall detected. Skipping keyword.")
         return False
+    
     job_input_selector = "input[name='keywords']" 
     location_input_selector = "input[name='location']"
+    
     try:
         print(f"Step 2: Searching for '{job_title}'...")
         page.wait_for_selector(job_input_selector, timeout=10000)
@@ -99,7 +107,7 @@ def search_linkedin(page, job_title, location="Finland"):
         page.fill(location_input_selector, location)
         page.press(location_input_selector, "Enter")
         page.wait_for_load_state("networkidle")
-        print("Status: Search results loaded.")
+        print(f"Status: Search completed for '{job_title}'.")
 
         return True
         
@@ -163,11 +171,13 @@ def extract_jobs():
 
 def create_data_excel():
     """Creates an excel workbook in the output folder."""
+
     lib = Files()
     file_path = 'output/data.xlsx'
     headers = [{"Company": "", "Title": "", "Location": "", "Deadline": "", "Link": ""}]
+
     if os.path.exists(file_path):
-        print("Data excel exists in output.")
+        print("Status: Excel data found in output.")
         lib.open_workbook(file_path)
     else:
         print("Creating new data.xlsx in output.")
@@ -222,7 +232,7 @@ def write_new_jobs(new_jobs_table):
     rows = tables.export_table(new_jobs_table)
    
     if not rows:
-        print("No new jobs found")
+        print("Status: No new jobs found")
         return 0
         
     lib.open_workbook("output/data.xlsx")
