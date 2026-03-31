@@ -15,14 +15,6 @@ SEARCH_KEYWORDS = [
     "it internship"
 ]
 
-# Predefined job search keywords agreed by the team.
-SEARCH_KEYWORDS = [
-    "it trainee",
-    "it harjoittelija",
-    "it intern",
-    "it internship"
-]
-
 @task
 def student_job_robot():
     """
@@ -86,6 +78,7 @@ def scrape_linkedin_task():
         if page.is_visible(accept_btn):
             page.click(accept_btn, force=True)
         return page
+    
     except Exception as e:
         print(f"Error in scrape_linkedin_task: {e}")
         return None
@@ -114,18 +107,12 @@ def search_linkedin(page, job_title, location="Finland"):
         print(f"Error in search_linkedin: {e}")
         return False
 
-@teardown
-def cleanup(task):
-    """Closes browser safely."""
-    try:
-        browser.get_browser().close()
-    except:
-        pass
 
 def extract_jobs():
     """Extracts job data from the page."""
     page = browser.page()
     job_cards = page.locator("div.base-search-card")
+    count = job_cards.count()
     jobs = []
 
     for i in range(count):
@@ -281,3 +268,11 @@ def send_error_email(error_message):
     
     except Exception as e:
         print(f"Failed to send error email: {e}")
+
+@teardown
+def cleanup(task):
+    """Closes browser safely."""
+    try:
+        browser.get_browser().close()
+    except:
+        pass
