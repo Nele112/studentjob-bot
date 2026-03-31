@@ -5,7 +5,15 @@ from robocorp.tasks import task, teardown
 from robocorp import browser
 from RPA.Excel.Files import Files
 from RPA.Tables import Tables
-from RPA.Outlook.Application import Application
+from RPA.Email.ImapSmtp import ImapSmtp # Vaihdettu Mac-yhteensopivaksi
+
+# Predefined job search keywords agreed by the team.
+SEARCH_KEYWORDS = [
+    "it trainee",
+    "it harjoittelija",
+    "it intern",
+    "it internship"
+]
 
 # Predefined job search keywords agreed by the team.
 SEARCH_KEYWORDS = [
@@ -67,65 +75,36 @@ def scrape_linkedin_task():
     """
     # Configure browser visibility and speed
     browser.configure(headless=False, slowmo=500)
-    
     try:
         print("Step 1: Navigating to LinkedIn...")
         page = browser.goto("https://fi.linkedin.com/jobs/jobs-in-finland?position=1&pageNum=0")
-        
-        # Selectors for modals and banners
         close_x_button = "button[aria-label='Dismiss'], button[aria-label='Sulje']"
         accept_btn = "button:has-text('Hyväksy'), button:has-text('Accept')"
-        
-        # Wait for potential popups to appear
         page.wait_for_timeout(3000) 
-        
-        # Dismiss sign-in popup if visible
         if page.is_visible(close_x_button):
             page.click(close_x_button)
-            print("Status: Login popup dismissed.")
-        
-        # Accept cookies
         if page.is_visible(accept_btn):
             page.click(accept_btn, force=True)
-            print("Status: Cookies accepted.")
-            
         return page
-            
     except Exception as e:
         print(f"Error in scrape_linkedin_task: {e}")
         return None
 
 def search_linkedin(page, job_title, location="Finland"):
-    """
-    Searches LinkedIn jobs using the given keyword and location.
-    Returns True, if the search completed successfully, False otherwise.
-    """
-    # Reset to the LinkedIn jobs landind page before each new search
+    """Searches LinkedIn jobs using the given keyword."""
     page.goto("https://fi.linkedin.com/jobs/jobs-in-finland?position=1&pageNum=0")
-
-    # Give the page time to load before checking the search form
     page.wait_for_timeout(5000)
-
-    # Skip this keyword if LinkedIn redirects to authwall
     if "authwall" in page.url:
-        print("Authwall detected. Skipping this keyword.")
+        print("Authwall detected. Skipping keyword.")
         return False
-    
     job_input_selector = "input[name='keywords']" 
     location_input_selector = "input[name='location']"
-
     try:
-        print(f"Step 2: Searching for '{job_title}' in '{location}'...")
+        print(f"Step 2: Searching for '{job_title}'...")
         page.wait_for_selector(job_input_selector, timeout=10000)
-        
-        # Fill search criteria
         page.fill(job_input_selector, job_title)
         page.fill(location_input_selector, location)
-        
-        # Execute search
         page.press(location_input_selector, "Enter")
-        
-        # Wait for the result listing to load
         page.wait_for_load_state("networkidle")
         print("Status: Search results loaded.")
 
@@ -137,15 +116,16 @@ def search_linkedin(page, job_title, location="Finland"):
 
 @teardown
 def cleanup(task):
-    """Closes all browser instances after the task finishes."""
-    browser.close_all()
+    """Closes browser safely."""
+    try:
+        browser.get_browser().close()
+    except:
+        pass
 
 def extract_jobs():
-    """ Extracts job data from the currently visible LinkedIn results page. """
-
+    """Extracts job data from the page."""
     page = browser.page()
     job_cards = page.locator("div.base-search-card")
-    count =job_cards.count()
     jobs = []
 
     for i in range(count):
@@ -193,32 +173,20 @@ def extract_jobs():
     })    
 
     return jobs
-   
 
-    
 def create_data_excel():
-    """Creates an excel workbook if one is not already in place"""
-
+    """Creates an excel workbook in the output folder."""
     lib = Files()
-    file_path = './data.xlsx'
-
-    headers = [{"Company": "", 
-                "Title": "", 
-                "Location": "", 
-                "Deadline": "", 
-                "Link": ""
-    }]
-
+    file_path = 'output/data.xlsx'
+    headers = [{"Company": "", "Title": "", "Location": "", "Deadline": "", "Link": ""}]
     if os.path.exists(file_path):
-        print("Data excel exists, proceeding to open.")
-        lib.open_workbook(path="data.xlsx")
-        lib.save_workbook()
+        print("Data excel exists in output.")
+        lib.open_workbook(file_path)
     else:
-        print("Data excel does not exist, creating a new one.")
-        lib.create_workbook(path="./data.xlsx", fmt="xlsx")
-        lib.create_worksheet(name="Jobs",content=headers, header=True)
+        print("Creating new data.xlsx in output.")
+        lib.create_workbook(path=file_path, fmt="xlsx")
+        lib.create_worksheet(name="Jobs", content=headers, header=True)
         lib.save_workbook()
-
 
 def compare_jobs(jobs):
     """Read from excel and compare with new data, store new jobs to the main file. 
@@ -278,6 +246,15 @@ def write_new_jobs(new_jobs_table):
     return len(rows)
 
 def send_notif_email():
+    """Sends notification via SMTP (Mac/PC/Cloud compatible)."""
+    mail = ImapSmtp()
+    # TÄHÄN TARVITAAN OMAT TUNNUKSET JOTTA TOIMII:
+    try:
+        # mail.authorize(account="email", password="app_password", smtp_server="smtp.gmail.com")
+        # mail.send_message(...)
+        print("Email: Function prepared, needs credentials to send.")
+    except Exception as e:
+        print(f"Email Error: {e}")
     """Send notification by email to user, if new jobs has been found"""
 
     app = Application()
