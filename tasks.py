@@ -6,6 +6,8 @@ from robocorp import browser
 from RPA.Excel.Files import Files
 from RPA.Tables import Tables
 from RPA.Email.ImapSmtp import ImapSmtp 
+from robocorp import storage
+import json
 
 # Predefined job search keywords agreed by the team.
 SEARCH_KEYWORDS = [
@@ -185,40 +187,52 @@ def create_data_excel():
         lib.create_worksheet(name="Jobs", content=headers, header=True)
         lib.save_workbook()
 
-def compare_jobs(jobs):
-    """Read from excel and compare with new data, store new jobs to the main file. 
-    Returns a table containing nly new job entries based on unique links
+def get_seen_links():
+    """Load previously seen job links from Control Room asset storage.
+    Returns a set of normalized link. If the asset is missing or unreadable, returns an empty set.
     """
+    try:
+        data = storage.get("studentjob_seen_links")
+        return set(data)
+    except Exception:
+        return set()
     
-    lib = Files()
+
+def compare_jobs(jobs):
+    """Compare extracted jobs against previously seen job links stored in Control Room asset storage.
+    Returns a table containing only new job entries based on normalized unique links.
+    Also updates the stored link set so future runs can skip already seen jobs.
+    """
     tables = Tables()
     
     def normalize(link):
+        """Normalize LinkedIn job links for reliable duplicate comparison."""
         return link.strip().rstrip("/").split("?")[0]
 
     # Transform the new jobs list in to a table
     new_links = tables.create_table(jobs)
         
-    # Read excel and get old job links as a table
-    lib.open_workbook("output/data.xlsx")
-    existing_table = lib.read_worksheet_as_table(header=True)
-
-    existing_links = {
-        normalize(row["Link"])
-        for row in existing_table
-        if row.get("Link")
-    }
+    #Load previously seen links form persistent asset storage.
+    existing_links = get_seen_links()
 
     # See if links matches between tables    
     new_job_rows = []
+    new_links_set = set()
 
     for row in new_links:
         link = row.get("Link")
-        if link and normalize(link) not in existing_links:
-            new_job_rows.append(row)
+        if link:
+            clean = normalize(link)
+            new_links_set.add(clean)
+
+            if clean not in existing_links:
+                new_job_rows.append(row)
  
-    new_jobs_table = tables.create_table(new_job_rows)
-    return new_jobs_table
+    #Update persistent storage with both old and newly seen links
+    all_links = existing_links.union(new_links_set)
+    storage.set("studentjob_seen_links", list(all_links))
+    
+    return tables.create_table(new_job_rows)
     
 
 def write_new_jobs(new_jobs_table):
