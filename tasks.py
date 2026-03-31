@@ -5,7 +5,7 @@ from robocorp.tasks import task, teardown
 from robocorp import browser
 from RPA.Excel.Files import Files
 from RPA.Tables import Tables
-from RPA.Email.ImapSmtp import ImapSmtp # Vaihdettu Mac-yhteensopivaksi
+from RPA.Email.ImapSmtp import ImapSmtp 
 
 # Predefined job search keywords agreed by the team.
 SEARCH_KEYWORDS = [
@@ -235,7 +235,7 @@ def write_new_jobs(new_jobs_table):
 def send_notif_email():
     """Sends notification via SMTP (Mac/PC/Cloud compatible)."""
     mail = ImapSmtp()
-    # TÄHÄN TARVITAAN OMAT TUNNUKSET JOTTA TOIMII:
+    
     try:
         # mail.authorize(account="email", password="app_password", smtp_server="smtp.gmail.com")
         # mail.send_message(...)
