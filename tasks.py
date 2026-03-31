@@ -192,7 +192,7 @@ def get_seen_links():
     Returns a set of normalized link. If the asset is missing or unreadable, returns an empty set.
     """
     try:
-        data = storage.get("studentjob_seen_links")
+        data = storage.get_json("studentjob_seen_links")
         return set(data)
     except Exception:
         return set()
@@ -230,7 +230,7 @@ def compare_jobs(jobs):
  
     #Update persistent storage with both old and newly seen links
     all_links = existing_links.union(new_links_set)
-    storage.set("studentjob_seen_links", list(all_links))
+    storage.set_json("studentjob_seen_links", list(all_links))
     
     return tables.create_table(new_job_rows)
     
