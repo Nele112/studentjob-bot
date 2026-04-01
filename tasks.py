@@ -16,7 +16,7 @@ EMAIL_RECIPIENTS = ""
 
 # Predefined job search keywords agreed by the team.
 SEARCH_KEYWORDS = [
-    "customer service",
+    "it trainee",
     "it harjoittelija",
     "it intern",
     "it internship"
@@ -186,11 +186,13 @@ def create_data_excel():
     if os.path.exists(file_path):
         print("Status: Excel data found in output.")
         lib.open_workbook(file_path)
+        lib.close_workbook()
     else:
         print("Creating new data.xlsx in output.")
         lib.create_workbook(path=file_path, fmt="xlsx")
         lib.create_worksheet(name="Jobs", content=headers, header=True)
         lib.save_workbook()
+        lib.close_workbook()
 
 def get_seen_links():
     """Load previously seen job links from Control Room asset storage.
@@ -255,8 +257,9 @@ def write_new_jobs(new_jobs_table):
         return 0
         
     lib.open_workbook("output/data.xlsx")
-    lib.append_rows_to_worksheet(rows, header=False)
+    lib.append_rows_to_worksheet(rows, name="Jobs", header=False)
     lib.save_workbook("output/data.xlsx")
+    lib.close_workbook()
 
     print(f"Added {len(rows)} new jobs.")
     return len(rows)
@@ -290,7 +293,7 @@ def send_email(subject, body, attachment_path=None):
                 body=body
             )
 
-            print(f"Notification email process completed: {subject}")
+        print(f"Notification email process completed: {subject}")
 
     except Exception as e:
         print("❌ EMAIL ERROR ❌")
@@ -330,5 +333,5 @@ def cleanup(task):
     """Closes browser safely."""
     try:
         browser.get_browser().close()
-    except:
+    except Exception:
         pass
