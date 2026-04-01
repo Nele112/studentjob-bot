@@ -73,7 +73,7 @@ The robot is configured to run once per day in Control Room.
 - Satu Grönroos 
 - Nele Nestor-Voron 
 - Jani Partanen 
-- 
+  
 ## Running
 ### Local Execution
 Run the robot locally using: 
