@@ -7,11 +7,16 @@ from RPA.Excel.Files import Files
 from RPA.Tables import Tables
 from RPA.Email.ImapSmtp import ImapSmtp 
 from robocorp import storage
-import json
+
+# Email settings for SMTP sending.
+# Use a separate robot email account, not your personal main email.
+EMAIL_ACCOUNT = ""
+EMAIL_PASSWORD = ""
+EMAIL_RECIPIENTS = ""
 
 # Predefined job search keywords agreed by the team.
 SEARCH_KEYWORDS = [
-    "it trainee",
+    "customer service",
     "it harjoittelija",
     "it intern",
     "it internship"
@@ -56,7 +61,7 @@ def student_job_robot():
 
         #Send notification only if new jobs were added
         if added_count > 0:
-            send_notif_email()
+            send_notif_email(added_count)
         else:
             print("No notification sent because no new jobs were found.")
 
@@ -256,43 +261,69 @@ def write_new_jobs(new_jobs_table):
     print(f"Added {len(rows)} new jobs.")
     return len(rows)
 
-def send_notif_email():
-    """Sends notification via SMTP (Mac/PC/Cloud compatible)."""
+def send_email(subject, body, attachment_path=None):
+    """Generic function for sending emails through SMTP.
+    """
     mail = ImapSmtp()
-    
-    try:
-        # mail.authorize(account="email", password="app_password", smtp_server="smtp.gmail.com")
-        # mail.send_message(...)
-        print("Email: Function prepared, needs credentials to send.")
-    except Exception as e:
-        print(f"Email Error: {e}")
-    """Send notification by email to user, if new jobs has been found"""
 
-#    app = Application()
-#    app.open_application()
-#    app.send_email(
-#        recipients='EMAIL_1, EMAIL_2',
-#        subject='New job listings found!',
-#        body='StudentJob Robot has found new job listings. Check them out!',
-#        attachments=os.path.join(os.path.curdir, "output/data.xlsx")
-#    )
+    try:
+        mail.authorize(
+            account=EMAIL_ACCOUNT,
+            password=EMAIL_PASSWORD,
+            smtp_server="smtp.gmail.com",
+            smtp_port=587
+        )
+
+        if attachment_path and os.path.exists(attachment_path):
+            mail.send_message(
+                sender=EMAIL_ACCOUNT,
+                recipients=EMAIL_RECIPIENTS,
+                subject=subject,
+                body=body,
+                attachments=attachment_path
+            )
+        else:
+            mail.send_message(
+                sender=EMAIL_ACCOUNT,
+                recipients=EMAIL_RECIPIENTS,
+                subject=subject,
+                body=body
+            )
+
+            print(f"Notification email process completed: {subject}")
+
+    except Exception as e:
+        print("❌ EMAIL ERROR ❌")
+        print(f"Failed to send email: {e}")
+        print(f"Account: {EMAIL_ACCOUNT}")
+        print("Check SMTP credentials and App Password.")
+
+def send_notif_email(added_count):
+    """Sends notification via SMTP (Mac/PC/Cloud compatible)."""
+    
+    subject = "StudentJob bot: New job listings found"
+    body = (f"StudentJob Robot found {added_count} new job listing(s).\n\n"
+        "Please check the attached Excel file for details."
+    )
+    
+    send_email(
+        subject=subject,
+        body=body,
+        attachment_path="output/data.xlsx"
+    )
+
 
 def send_error_email(error_message):
     """Send error notification email to user."""
 
-#    try: 
-#        app = Application()
-#        app.open_application()
-#        app.send_email(
-#            recipients='EMAIL_1, EMAIL_2',
-#            subject='StudentJob Robot ERROR',
-#            body=f'Robot encountered an error:\n\n{error_message}'
-#        )
-#        print("Error email sent.")
-    
-#    except Exception as e:
-#        print(f"Failed to send error email: {e}")
+    subject = "StudentJob bot ERROR"
+    body = ("The robot encountered a critical error during execution.\n\n"
+        f"Error details:\n{error_message}"
+    )
+
+    send_email(subject=subject, body=body)
     print(f"Robot error: {error_message}")
+
     
 @teardown
 def cleanup(task):
