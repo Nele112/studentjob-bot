@@ -9,7 +9,12 @@ from RPA.Email.ImapSmtp import ImapSmtp
 from robocorp import storage
 
 # Email settings for SMTP sending.
-# Use a separate robot email account, not your personal main email.
+# Email configuration (currently disabled for security reasons).
+# To enable email functionality, provide a valid email address and App Password below.
+# NOTE: This is a temporary setup for local testing only.
+# In a production-ready solution, all sensitive data (email, password, recipients)
+# should be stored securely in Control Room Vault / environment variables,
+# not hardcoded in the source code.
 EMAIL_ACCOUNT = ""
 EMAIL_PASSWORD = ""
 EMAIL_RECIPIENTS = ""
